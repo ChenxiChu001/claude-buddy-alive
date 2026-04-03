@@ -10,12 +10,18 @@ const state = require('../src/state');
 const mood = require('../src/mood');
 const animation = require('../src/animation');
 
+const fs = require('fs');
+const LOG = require('os').homedir() + '/.claude/buddy-debug.log';
+function log(msg) { fs.appendFileSync(LOG, new Date().toISOString() + ' ' + msg + '\n'); }
+
 async function main() {
+  log('hook invoked');
   // 从 stdin 读取 Claude Code hook payload
   let payload = '';
   for await (const chunk of process.stdin) {
     payload += chunk;
   }
+  log('payload: ' + payload.slice(0, 120));
 
   let data;
   try {
@@ -55,14 +61,11 @@ async function main() {
   // 保存
   state.save(s);
 
-  // 渲染宠物（每 N 次操作显示一次，避免刷屏）
-  const showEvery = 3; // 每 3 次操作显示一次
-  const alwaysShowOn = ['commit', 'test_pass', 'test_fail', 'bash_error'];
-
-  if (s.totalActions % showEvery === 0 || alwaysShowOn.includes(event.reason)) {
-    const display = animation.buildDisplay(s, event.reason);
-    animation.render(display);
-  }
+  // 渲染宠物 — stdout 输出给 Claude Code 作为 hook feedback
+  const display = animation.buildDisplay(s, event.reason);
+  // 同时写 stderr（终端可见）和 stdout（Claude Code 可见）
+  process.stderr.write(display + '\n');
+  process.stdout.write(display + '\n');
 
   process.exit(0);
 }
