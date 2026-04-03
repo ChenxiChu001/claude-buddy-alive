@@ -418,7 +418,12 @@ function tick() {
   frameIdx++;
 }
 
+const PID_FILE = path.join(os.homedir(), '.claude', 'buddy-companion.pid');
+
 // ─────────── 启动 ───────────
+// 写入 PID 文件，让 hook 知道我在运行
+fs.writeFileSync(PID_FILE, String(process.pid), 'utf-8');
+
 process.stdout.write(A.hideCursor);
 process.stdout.write('\n'.repeat(HEIGHT)); // 预留空间
 
@@ -432,6 +437,7 @@ const timer = setInterval(tick, INTERVAL);
 // 退出清理
 function cleanup() {
   clearInterval(timer);
+  try { fs.unlinkSync(PID_FILE); } catch {}
   process.stdout.write(A.showCursor);
   process.stdout.write('\n');
   process.exit(0);
