@@ -12,7 +12,22 @@ const animation = require('../src/animation');
 
 const fs = require('fs');
 const LOG = require('os').homedir() + '/.claude/buddy-debug.log';
+const PID_FILE = require('os').homedir() + '/.claude/buddy-companion.pid';
+const COMPANION_SCRIPT = require('path').join(__dirname, '../src/companion.js');
 function log(msg) { fs.appendFileSync(LOG, new Date().toISOString() + ' ' + msg + '\n'); }
+
+function ensureCompanion() {
+  let running = false;
+  try {
+    const pid = parseInt(fs.readFileSync(PID_FILE, 'utf-8').trim(), 10);
+    if (pid && !isNaN(pid)) { process.kill(pid, 0); running = true; }
+  } catch {}
+  if (!running && process.platform === 'win32') {
+    const { spawn } = require('child_process');
+    spawn('cmd.exe', ['/c', 'start', '"Buddy"', 'node', COMPANION_SCRIPT],
+      { detached: true, stdio: 'ignore', shell: false }).unref();
+  }
+}
 
 async function main() {
   log('hook invoked');
@@ -60,6 +75,9 @@ async function main() {
 
   // 保存
   state.save(s);
+
+  // 确保伴侣窗口在运行
+  ensureCompanion();
 
   // 渲染宠物 — stdout 输出给 Claude Code 作为 hook feedback
   const display = animation.buildDisplay(s, event.reason);

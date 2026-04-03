@@ -12,11 +12,18 @@ const os   = require('os');
 
 const PID_FILE       = path.join(os.homedir(), '.claude', 'buddy-companion.pid');
 const COMPANION_SCRIPT = path.join(__dirname, '../src/companion.js');
+const LOG_FILE       = path.join(os.homedir(), '.claude', 'buddy-ensure.log');
+
+function log(msg) {
+  fs.appendFileSync(LOG_FILE, new Date().toISOString() + ' ' + msg + '\n');
+}
 
 async function main() {
   // 消耗 stdin
   let payload = '';
   for await (const chunk of process.stdin) payload += chunk;
+
+  log('ensure-companion invoked, payload: ' + payload.slice(0, 80));
 
   // 检查 PID 文件
   let running = false;
@@ -33,6 +40,7 @@ async function main() {
   }
 
   if (!running) {
+    log('companion not running, launching...');
     // 启动新的伴侣窗口
     const { spawn } = require('child_process');
     if (process.platform === 'win32') {
