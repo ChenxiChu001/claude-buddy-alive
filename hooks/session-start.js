@@ -7,7 +7,8 @@
  */
 
 const state = require('../src/state');
-const animation = require('../src/animation');
+
+const COMPANION_SCRIPT = require('path').join(__dirname, '../src/companion.js');
 
 async function main() {
   // 消耗 stdin（hook 规范要求）
@@ -50,6 +51,33 @@ async function main() {
 
   // 保存
   state.save(s);
+
+  // 在新窗口启动伴侣动画（仅 Windows，且尚未运行）
+  try {
+    const { execSync, spawn } = require('child_process');
+    const isWindows = process.platform === 'win32';
+    if (isWindows) {
+      // 检查是否已有 companion 进程在跑
+      let running = false;
+      try {
+        const out = execSync('tasklist /FI "IMAGENAME eq node.exe" /FO CSV', { encoding: 'utf-8' });
+        // 简单检测：读 buddy-state 里是否有 companionPid
+        const st = state.load();
+        if (st.companionPid) {
+          try { process.kill(st.companionPid, 0); running = true; } catch {}
+        }
+      } catch {}
+
+      if (!running) {
+        const child = spawn(
+          'cmd.exe',
+          ['/c', 'start', '""', 'node', COMPANION_SCRIPT],
+          { detached: true, stdio: 'ignore', shell: false }
+        );
+        child.unref();
+      }
+    }
+  } catch {}
 
   process.exit(0);
 }
