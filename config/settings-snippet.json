@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"BUDDY_ROOT/hooks/post-tool-use.js\"",
+            "timeout": 5
+          }
+        ],
+        "description": "Buddy: React to tool use with emotion and XP",
+        "id": "buddy:post-tool-use"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"BUDDY_ROOT/hooks/session-end.js\"",
+            "timeout": 5
+          }
+        ],
+        "description": "Buddy: Say goodbye and save state",
+        "id": "buddy:session-end"
+      }
+    ]
+  }
+}

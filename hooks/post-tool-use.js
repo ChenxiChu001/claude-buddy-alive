@@ -1,0 +1,70 @@
+#!/usr/bin/env node
+/**
+ * post-tool-use.js — PostToolUse Hook
+ *
+ * 每次 Claude Code 工具执行后触发。
+ * 读取 stdin 获取工具上下文，分析情绪，更新状态，渲染 ASCII 宠物。
+ */
+
+const state = require('../src/state');
+const mood = require('../src/mood');
+const animation = require('../src/animation');
+
+async function main() {
+  // 从 stdin 读取 Claude Code hook payload
+  let payload = '';
+  for await (const chunk of process.stdin) {
+    payload += chunk;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(payload);
+  } catch {
+    // 无法解析 payload，静默退出
+    process.exit(0);
+  }
+
+  const toolName = data.tool_name || data.toolName || '';
+  const toolInput = data.tool_input || data.toolInput || {};
+  const toolOutput = data.tool_output || data.toolOutput || '';
+  const exitCode = data.exit_code ?? data.exitCode ?? null;
+
+  // 加载宠物状态
+  const s = state.load();
+
+  // 分析事件
+  const event = mood.analyzeToolEvent(toolName, toolInput, toolOutput, exitCode);
+
+  // 更新心情
+  mood.updateMood(s, event.mood);
+
+  // 累加 XP 和统计
+  state.addXP(s, event.xp);
+  s.totalActions += 1;
+  s.todayActions += 1;
+
+  if (event.reason === 'commit') s.totalCommits += 1;
+  if (event.reason === 'bash_error' || event.reason === 'test_fail') s.totalErrors += 1;
+  if (event.reason === 'test_pass') s.totalTestPasses += 1;
+  if (event.reason === 'file_write') s.totalFilesWritten += 1;
+
+  // 检查连续天数
+  state.checkStreak(s);
+
+  // 保存
+  state.save(s);
+
+  // 渲染宠物（每 N 次操作显示一次，避免刷屏）
+  const showEvery = 3; // 每 3 次操作显示一次
+  const alwaysShowOn = ['commit', 'test_pass', 'test_fail', 'bash_error'];
+
+  if (s.totalActions % showEvery === 0 || alwaysShowOn.includes(event.reason)) {
+    const display = animation.buildDisplay(s, event.reason);
+    animation.render(display);
+  }
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

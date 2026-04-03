@@ -1,0 +1,28 @@
+{
+  "name": "claude-buddy-alive",
+  "version": "1.0.0",
+  "description": "Make your Claude Code /buddy pet feel truly alive - reactive emotions, growth system, and cross-session memory",
+  "main": "src/state.js",
+  "bin": {
+    "buddy-install": "./install.js"
+  },
+  "scripts": {
+    "install-hooks": "node install.js",
+    "test": "node tests/run.js"
+  },
+  "keywords": [
+    "claude-code",
+    "buddy",
+    "tamagotchi",
+    "virtual-pet",
+    "terminal-pet",
+    "coding-companion",
+    "hooks",
+    "ascii-art"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
