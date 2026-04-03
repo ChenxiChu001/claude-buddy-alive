@@ -73,7 +73,6 @@ function main() {
       const raw = fs.readFileSync(STATE_FILE, 'utf-8');
       state = JSON.parse(raw);
     } catch {
-      // 还没初始化过，显示默认
       process.stdout.write('(=｀ω´=) buddy not initialized\n');
       return;
     }
@@ -86,11 +85,21 @@ function main() {
 
     const face  = (FACE[stage] || FACE.baby)[mood] || FACE.baby.idle;
     const color = MOOD_COLOR[mood] || c.cyan;
-
     const streakPart = streak > 1 ? ` ${c.yellow}${streak}d🔥${c.reset}` : '';
-    const line = `${color}${face}${c.reset} ${c.dim}Lv.${level}${c.reset} ${c.gray}[${xp}xp]${c.reset}${streakPart}`;
 
-    process.stdout.write(line + '\n');
+    // 有待显示的问候语就展示，然后清掉
+    if (state.greetingPending) {
+      const greeting = state.greetingPending;
+      // 清掉标记
+      state.greetingPending = null;
+      try { fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8'); } catch {}
+
+      const line = `${color}${face}${c.reset} ${c.bold}${greeting}${c.reset}  ${c.dim}Lv.${level} [${xp}xp]${c.reset}${streakPart}`;
+      process.stdout.write(line + '\n');
+    } else {
+      const line = `${color}${face}${c.reset} ${c.dim}Lv.${level}${c.reset} ${c.gray}[${xp}xp]${c.reset}${streakPart}`;
+      process.stdout.write(line + '\n');
+    }
   });
 }
 
